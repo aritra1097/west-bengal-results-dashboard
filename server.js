@@ -62,10 +62,11 @@ function cleanText(nodeOrText) {
 }
 
 function cleanPartyName(value) {
-  return decodeHtml(value)
+  const cleaned = decodeHtml(value)
     .replace(/\bi\s*Party Wise State Trends[\s\S]*$/i, "")
     .replace(/\s*Leading In\s*:.*$/i, "")
     .trim();
+  return /^Party Wise State Trends$/i.test(cleaned) ? "" : cleaned;
 }
 
 function numberFrom(value) {
@@ -206,11 +207,17 @@ async function findLiveFolder() {
   for (const folder of folders) {
     const baseUrl = `${ECI_BASE}/${folder}/`;
     const partyUrl = `${baseUrl}partywiseresult-${WEST_BENGAL.stateCode}.htm`;
+    const stateUrl = `${baseUrl}statewise${WEST_BENGAL.stateCode}1.htm`;
     const indexUrl = `${baseUrl}index.htm`;
     const partyHtml = await tryFetchText(partyUrl);
 
     if (partyHtml && /West Bengal/i.test(partyHtml)) {
       return { folder, baseUrl, partyUrl, partyHtml, indexUrl, discoveredFolders: folders };
+    }
+
+    const stateHtml = await tryFetchText(stateUrl);
+    if (stateHtml && /Status Known For|Constituency/i.test(stateHtml)) {
+      return { folder, baseUrl, partyUrl, partyHtml, stateHtml, indexUrl, discoveredFolders: folders };
     }
 
     const indexHtml = await tryFetchText(indexUrl);
@@ -311,9 +318,9 @@ function parseConstituencies(html) {
     .filter((row) => row.constituency && row.number);
 }
 
-async function fetchConstituencies(baseUrl) {
+async function fetchConstituencies(baseUrl, seededFirstHtml = null) {
   const firstUrl = `${baseUrl}statewise${WEST_BENGAL.stateCode}1.htm`;
-  const firstHtml = await tryFetchText(firstUrl);
+  const firstHtml = seededFirstHtml || await tryFetchText(firstUrl);
   if (!firstHtml) return { rows: [], statusKnown: null, lastUpdated: null, sourceUrls: [] };
 
   const urls = constituencyPageUrls(baseUrl, firstHtml);
@@ -423,11 +430,11 @@ async function loadResults() {
     };
   }
 
-  const partyHtml = found.partyHtml || await fetchText(found.partyUrl);
   const [constituencyData, liveJson] = await Promise.all([
-    fetchConstituencies(found.baseUrl),
+    fetchConstituencies(found.baseUrl, found.stateHtml),
     fetchLiveJson(found.baseUrl)
   ]);
+  const partyHtml = found.partyHtml || await tryFetchText(found.partyUrl) || found.stateHtml || "";
   const parties = parsePartySummary(partyHtml);
   const summary = summarizeDashboard(parties, constituencyData.rows, liveJson.colors);
 
