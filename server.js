@@ -240,6 +240,14 @@ async function findLiveFolder() {
   return { folder: null, baseUrl: null, partyUrl: null, homeHtml, discoveredFolders: folders, diagnostics };
 }
 
+function diagnosticsShowCloudBlock(diagnostics = []) {
+  return diagnostics.length > 0 && diagnostics.every((item) =>
+    item.party === "missing" &&
+    item.state === "missing" &&
+    item.index === "missing"
+  );
+}
+
 function parsePartySummary(html) {
   const root = parseHtml(html);
   const tables = descendants(root, "table");
@@ -423,13 +431,16 @@ async function loadResults() {
   const now = new Date().toISOString();
 
   if (!found.folder || !found.baseUrl) {
+    const cloudBlocked = diagnosticsShowCloudBlock(found.diagnostics);
     return {
       ok: false,
       version: APP_VERSION,
       state: WEST_BENGAL,
       generatedAt: now,
-      portalStatus: "waiting",
-      message: "The ECI results folder for West Bengal is not live yet. The dashboard will keep checking the official portal.",
+      portalStatus: cloudBlocked ? "source-blocked" : "waiting",
+      message: cloudBlocked
+        ? "The ECI result pages are live, but this hosted server cannot fetch them from Vercel. ECI appears to be blocking or varying responses for cloud-server traffic."
+        : "The ECI results folder for West Bengal is not live yet. The dashboard will keep checking the official portal.",
       discoveredFolders: found.discoveredFolders,
       diagnostics: found.diagnostics,
       source: {

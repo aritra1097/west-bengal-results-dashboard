@@ -39,7 +39,7 @@ function signature(data) {
 
 function updateStatus(data) {
   const isLive = data.portalStatus === "live";
-  setText("feedStatus", isLive ? "Live" : data.portalStatus === "waiting" ? "Waiting for ECI" : "Feed error");
+  setText("feedStatus", isLive ? "Live" : data.portalStatus === "source-blocked" ? "ECI blocked on host" : data.portalStatus === "waiting" ? "Waiting for ECI" : "Feed error");
   setText("lastUpdated", data.pageLastUpdated || data.statusKnown || data.message || "Checking official portal");
   setText("majorityLabel", `${data.state.majority} of ${data.state.totalSeats}`);
   setText("knownLabel", `${fmt(data.summary.highlights.knownSeats)} known, ${fmt(data.summary.highlights.declaredSeats)} declared`);
@@ -56,7 +56,12 @@ function updateDuel(data) {
 
   const leader = [bjp, tmc].filter(Boolean).sort((a, b) => b.total - a.total)[0];
   if (!leader || knownSeats === 0) {
-    setText("narrative", "The dashboard is waiting for the West Bengal results pages to become available on ECI.");
+    setText(
+      "narrative",
+      data.portalStatus === "source-blocked"
+        ? "ECI pages are reachable from a local computer, but Vercel's cloud server is not receiving them. The public site needs a different data relay for live results."
+        : "The dashboard is waiting for the West Bengal results pages to become available on ECI."
+    );
     return;
   }
 
