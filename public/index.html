@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>West Bengal Election Results Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Election Commission of India live feed</p>
+        <h1>West Bengal Assembly Results</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="refreshNow" type="button">Refresh</button>
+        <a id="sourceLink" href="https://results.eci.gov.in/" target="_blank" rel="noreferrer">ECI Source</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="status-strip" aria-live="polite">
+        <div>
+          <span class="label">Feed</span>
+          <strong id="feedStatus">Connecting</strong>
+        </div>
+        <div>
+          <span class="label">ECI update</span>
+          <strong id="lastUpdated">Waiting for data</strong>
+        </div>
+        <div>
+          <span class="label">Next check</span>
+          <strong id="nextRefresh">60s</strong>
+        </div>
+      </section>
+
+      <section class="headline-grid">
+        <div class="meter-panel">
+          <div class="meter-head">
+            <div>
+              <span class="label">Majority mark</span>
+              <strong id="majorityLabel">148 of 294</strong>
+            </div>
+            <div id="knownLabel">0 known</div>
+          </div>
+          <div class="majority-track">
+            <div class="majority-line" aria-hidden="true"></div>
+            <div id="seatBars" class="seat-bars"></div>
+          </div>
+          <div id="narrative" class="narrative">The dashboard is checking the ECI portal for West Bengal results.</div>
+        </div>
+
+        <div class="duel-panel">
+          <article>
+            <span class="label">BJP</span>
+            <strong id="bjpTotal">0</strong>
+            <small id="bjpDetail">0 won, 0 leading</small>
+          </article>
+          <article>
+            <span class="label">AITC / TMC</span>
+            <strong id="tmcTotal">0</strong>
+            <small id="tmcDetail">0 won, 0 leading</small>
+          </article>
+          <article>
+            <span class="label">Others</span>
+            <strong id="othersTotal">0</strong>
+            <small>All other parties</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <span class="label">Party tally</span>
+              <h2>Seats won plus leading</h2>
+            </div>
+          </div>
+          <div id="partyList" class="party-list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <span class="label">Constituency map</span>
+              <h2>294 seat grid</h2>
+            </div>
+          </div>
+          <div id="seatGrid" class="seat-grid" aria-label="Seat grid"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="table-toolbar">
+          <div>
+            <span class="label">Constituencies</span>
+            <h2>Leads, margins, rounds</h2>
+          </div>
+          <input id="searchBox" type="search" placeholder="Search constituency, candidate, party">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Constituency</th>
+                <th>Leading</th>
+                <th>Party</th>
+                <th>Trailing</th>
+                <th>Margin</th>
+                <th>Round</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="constituencyRows">
+              <tr>
+                <td colspan="7">Waiting for the ECI feed.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel close-panel">
+        <div>
+          <span class="label">Closest seats</span>
+          <h2>Smallest current margins</h2>
+        </div>
+        <div id="closeSeats" class="close-list"></div>
+      </section>
+    </main>
+
+    <footer>
+      Official ECI data is shown as entered by Returning Officers at counting centres. Final data is Form 20.
+    </footer>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
