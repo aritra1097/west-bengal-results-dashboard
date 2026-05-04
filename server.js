@@ -28,6 +28,7 @@ let cache = {
 };
 
 const CACHE_MS = 25_000;
+const APP_VERSION = "2026-05-04-eci-live-diagnostics";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -203,6 +204,7 @@ async function discoverFolders() {
 
 async function findLiveFolder() {
   const { folders, homeHtml } = await discoverFolders();
+  const diagnostics = [];
 
   for (const folder of folders) {
     const baseUrl = `${ECI_BASE}/${folder}/`;
@@ -210,23 +212,32 @@ async function findLiveFolder() {
     const stateUrl = `${baseUrl}statewise${WEST_BENGAL.stateCode}1.htm`;
     const indexUrl = `${baseUrl}index.htm`;
     const partyHtml = await tryFetchText(partyUrl);
+    diagnostics.push({
+      folder,
+      party: partyHtml ? "ok" : "missing",
+      partyHasWestBengal: Boolean(partyHtml && /West Bengal/i.test(partyHtml))
+    });
 
     if (partyHtml && /West Bengal/i.test(partyHtml)) {
-      return { folder, baseUrl, partyUrl, partyHtml, indexUrl, discoveredFolders: folders };
+      return { folder, baseUrl, partyUrl, partyHtml, indexUrl, discoveredFolders: folders, diagnostics };
     }
 
     const stateHtml = await tryFetchText(stateUrl);
+    diagnostics.at(-1).state = stateHtml ? "ok" : "missing";
+    diagnostics.at(-1).stateHasTable = Boolean(stateHtml && /Status Known For|Constituency/i.test(stateHtml));
     if (stateHtml && /Status Known For|Constituency/i.test(stateHtml)) {
-      return { folder, baseUrl, partyUrl, partyHtml, stateHtml, indexUrl, discoveredFolders: folders };
+      return { folder, baseUrl, partyUrl, partyHtml, stateHtml, indexUrl, discoveredFolders: folders, diagnostics };
     }
 
     const indexHtml = await tryFetchText(indexUrl);
+    diagnostics.at(-1).index = indexHtml ? "ok" : "missing";
+    diagnostics.at(-1).indexHasWestBengal = Boolean(indexHtml && /West Bengal/i.test(indexHtml));
     if (indexHtml && /West Bengal/i.test(indexHtml)) {
-      return { folder, baseUrl, partyUrl, partyHtml: null, indexUrl, indexHtml, discoveredFolders: folders };
+      return { folder, baseUrl, partyUrl, partyHtml: null, indexUrl, indexHtml, discoveredFolders: folders, diagnostics };
     }
   }
 
-  return { folder: null, baseUrl: null, partyUrl: null, homeHtml, discoveredFolders: folders };
+  return { folder: null, baseUrl: null, partyUrl: null, homeHtml, discoveredFolders: folders, diagnostics };
 }
 
 function parsePartySummary(html) {
@@ -414,11 +425,13 @@ async function loadResults() {
   if (!found.folder || !found.baseUrl) {
     return {
       ok: false,
+      version: APP_VERSION,
       state: WEST_BENGAL,
       generatedAt: now,
       portalStatus: "waiting",
       message: "The ECI results folder for West Bengal is not live yet. The dashboard will keep checking the official portal.",
       discoveredFolders: found.discoveredFolders,
+      diagnostics: found.diagnostics,
       source: {
         portal: `${ECI_BASE}/`,
         party: null,
@@ -440,6 +453,7 @@ async function loadResults() {
 
   return {
     ok: true,
+    version: APP_VERSION,
     state: WEST_BENGAL,
     generatedAt: now,
     portalStatus: "live",
@@ -469,6 +483,7 @@ export async function resultsPayload() {
   } catch (error) {
     return {
       ok: false,
+      version: APP_VERSION,
       state: WEST_BENGAL,
       generatedAt: new Date().toISOString(),
       portalStatus: "error",
